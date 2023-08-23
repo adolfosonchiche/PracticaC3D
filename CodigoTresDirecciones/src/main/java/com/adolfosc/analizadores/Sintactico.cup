@@ -1,0 +1,101 @@
+
+package com.adolfosc.analizadores;
+
+import java_cup.runtime.*;
+import java.util.ArrayList;
+import java.util.List;
+import com.adolfosc.analizadores.ErrorCom;
+
+parser code {:
+
+    private List<ErrorCom> erroresCom;
+    private int numExp;
+    private String result = "";
+
+
+	public Sintactico(Lexico lex) {
+		super(lex);
+        this.erroresCom = lex.getErroresCom();
+        this.numExp = 1;
+	}
+
+    /**
+     * Método al que se llama automáticamente ante algún error sintactico.
+     **/
+    public void syntax_error(Symbol s){
+        erroresCom.add(new ErrorCom("Sintactico","No se esperaba Componente",String.valueOf(s.left),String.valueOf(s.right),String.valueOf(s.value)));
+    }
+
+    /**
+     * Método al que se llama automáticamente ante algún error sintáctico
+     * en el que ya no es posible una recuperación de errores.
+     **/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+        erroresCom.add(new ErrorCom("Sintactico","Error sintactico Irrecuperable",String.valueOf(s.left),String.valueOf(s.right),String.valueOf(s.value)));
+    }
+    /*---------Getters & Setters---------*/
+
+    public List<ErrorCom> getErroresCom(){
+        return this.erroresCom;
+    }
+
+    private void mostrarVal(String val1,String val2,String tipo){
+        this.result += "t"+this.numExp+" = " + val1 + tipo + val2 + "\n";
+        System.out.println("t"+this.numExp+" = " + val1 + tipo + val2);
+        this.numExp++;
+    }
+
+    private void mostrarVal2(String val1){
+        this.result += "t"+this.numExp+" = "+"-"+val1 + "\n";
+        System.out.println("t"+this.numExp+" = "+"-"+val1);
+        this.numExp++;
+    }
+
+    private String valT(){
+        int val = this.numExp -1;
+        return "t"+val;
+    }
+
+    public String getResult(){
+        return this.result;
+    }
+:}
+
+/* Terminals (tokens returned by the scanner). */
+terminal 	    SUMA,RESTA,MULT,DIVI,PARI,PARD,PUNTCOMA,IGUAL;
+
+terminal String ID,NUMERO;
+
+
+
+/* Non-Terminals (created scanner). */
+non terminal  inicio,expresion,termino,factor;
+
+
+/* The grammar : */
+
+start with inicio;
+
+inicio ::=
+            ID:val IGUAL expresion:exp PUNTCOMA {:System.out.println(val + "= " + String.valueOf(exp)); result +=val + "= " + String.valueOf(exp) + "\n";:} inicio
+        |
+;
+
+expresion ::=
+        expresion:val1 SUMA termino:val2 {:mostrarVal(String.valueOf(val1),String.valueOf(val2),"+");RESULT=valT();:}
+    |   expresion:val1 RESTA termino:val2 {:mostrarVal(String.valueOf(val1),String.valueOf(val2),"-");RESULT=valT();:}
+    |   termino:val {:RESULT=val;:}
+;
+
+termino ::=
+        termino:val1 MULT factor:val2 {:mostrarVal(String.valueOf(val1),String.valueOf(val2),"*");RESULT=valT();:}
+    |   termino:val1 DIVI factor:val2 {:mostrarVal(String.valueOf(val1),String.valueOf(val2),"/");RESULT=valT();:}
+    |   factor:val  {:RESULT=val;:}
+;
+
+factor ::=
+        PARI expresion:expr PARD    {:RESULT = String.valueOf(expr);:}
+    |   ID:val                      {:RESULT=val;:}
+    |   NUMERO:val                  {:RESULT=val;:}
+    |   RESTA NUMERO:val            {:mostrarVal2(String.valueOf(val));RESULT=valT();:}
+;
